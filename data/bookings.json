@@ -1,0 +1,29 @@
+[
+  {
+    "firstname": "Ana",
+    "lastname": "Lopez",
+    "totalprice": 150,
+    "depositpaid": true,
+    "checkin": "2027-01-10",
+    "checkout": "2027-01-15",
+    "additionalneeds": "Breakfast"
+  },
+  {
+    "firstname": "José",
+    "lastname": "Peña",
+    "totalprice": 0,
+    "depositpaid": false,
+    "checkin": "2027-02-01",
+    "checkout": "2027-02-01",
+    "additionalneeds": ""
+  },
+  {
+    "firstname": "Maria-Luisa",
+    "lastname": "O'Neil",
+    "totalprice": 99999,
+    "depositpaid": true,
+    "checkin": "2027-12-31",
+    "checkout": "2028-01-02",
+    "additionalneeds": "Airport transfer"
+  }
+]
