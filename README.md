@@ -53,7 +53,11 @@ Each run creates a booking per row in `data/bookings.json` and follows it throug
 | Booking lifecycle | Create booking | 200, numeric id, response schema, data echoed back |
 | | Get by id | 200, schema, stored data matches |
 | | Search by name | New booking appears in the results |
+| | List bookings | 200, every item has a numeric id, new booking is listed |
 | | Update without token | 403 |
+| | Update with invalid token | 403 |
+| | Full update with missing fields | 400 |
+| | Full update | 200, schema, every field replaced |
 | | Partial update | 200, only the patched field changes |
 | | Delete without token | 403 |
 | | Delete | 201 |
@@ -65,7 +69,7 @@ Every request also checks that the response time is under 5 seconds.
 
 Test data covers a regular booking, boundary values (total price `0`, same-day check-in and check-out, empty additional needs) and names with accents, hyphens and apostrophes.
 
-Last local run: 3 iterations, 39 requests, 111 assertions, 0 failures.
+Last local run: 3 iterations, 51 requests, 147 assertions, 0 failures.
 
 ## Defects found
 
@@ -73,5 +77,10 @@ Last local run: 3 iterations, 39 requests, 111 assertions, 0 failures.
 |---|---|---|
 | `POST /auth` with a wrong password | `401 Unauthorized` | `200 OK` with `{"reason": "Bad credentials"}` |
 | `POST /booking` with missing required fields | `400 Bad Request` | `500 Internal Server Error` |
+
+Why these expected results:
+
+- **401 for wrong credentials.** RFC 9110 (section 15.5.2) defines 401 for a request without valid authentication credentials. A 200 tells clients the request succeeded, so a client that only checks the status code continues without a token.
+- **400 for missing fields.** A 5xx status means the server failed; RFC 9110 (section 15.5.1) defines 400 for a request the server can't process because of a client error. The same API already does this on `PUT /booking/{id}`: the same incomplete body returns 400 there (see "Full update with missing fields"), so the 500 on `POST` is inconsistent with its own behaviour.
 
 The collection asserts the current behaviour and labels it, so a fix in the API shows up as a failing test that needs updating.

@@ -278,6 +278,33 @@
           }
         },
         {
+          "name": "List bookings",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "const ids = pm.response.json().map(b => b.bookingid);",
+                  "pm.test(\"Every item has a numeric booking id\", () => ids.forEach(id => pm.expect(id).to.be.a(\"number\")));",
+                  "pm.test(\"List includes the new booking\", () => pm.expect(ids).to.include(Number(pm.collectionVariables.get(\"bookingId\"))));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/booking"
+          }
+        },
+        {
           "name": "Update booking without token",
           "event": [
             {
@@ -306,6 +333,142 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"firstname\": \"{{firstname}}\",\n  \"lastname\": \"{{lastname}}\",\n  \"totalprice\": {{totalprice}},\n  \"depositpaid\": {{depositpaid}},\n  \"bookingdates\": {\n    \"checkin\": \"{{checkin}}\",\n    \"checkout\": \"{{checkout}}\"\n  },\n  \"additionalneeds\": \"{{additionalneeds}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Update booking with invalid token",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test(\"Status is 403\", () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token=not-a-real-token"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/booking/{{bookingId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"{{firstname}}\",\n  \"lastname\": \"{{lastname}}\",\n  \"totalprice\": {{totalprice}},\n  \"depositpaid\": {{depositpaid}},\n  \"bookingdates\": {\n    \"checkin\": \"{{checkin}}\",\n    \"checkout\": \"{{checkout}}\"\n  },\n  \"additionalneeds\": \"{{additionalneeds}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Full update with missing fields",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// PUT validates the body and answers 400, while POST answers 500 for the same input (see Negative cases)",
+                  "pm.test(\"Status is 400\", () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/booking/{{bookingId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"{{firstname}}\"\n}"
+            }
+          }
+        },
+        {
+          "name": "Full update booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const bookingSchema = {",
+                  "    type: \"object\",",
+                  "    required: [\"firstname\", \"lastname\", \"totalprice\", \"depositpaid\", \"bookingdates\"],",
+                  "    properties: {",
+                  "        firstname: { type: \"string\" },",
+                  "        lastname: { type: \"string\" },",
+                  "        totalprice: { type: \"number\" },",
+                  "        depositpaid: { type: \"boolean\" },",
+                  "        bookingdates: {",
+                  "            type: \"object\",",
+                  "            required: [\"checkin\", \"checkout\"],",
+                  "            properties: {",
+                  "                checkin: { type: \"string\", format: \"date\" },",
+                  "                checkout: { type: \"string\", format: \"date\" }",
+                  "            }",
+                  "        },",
+                  "        additionalneeds: { type: \"string\" }",
+                  "    }",
+                  "};",
+                  "",
+                  "pm.test(\"Status is 200\", () => pm.response.to.have.status(200));",
+                  "pm.test(\"Booking matches schema\", () => pm.response.to.have.jsonSchema(bookingSchema));",
+                  "pm.test(\"Every field is replaced\", () => {",
+                  "    const booking = pm.response.json();",
+                  "    pm.expect(booking.lastname).to.eql(\"Updated\");",
+                  "    pm.expect(booking.additionalneeds).to.eql(\"Updated by PUT\");",
+                  "    pm.expect(booking.firstname).to.eql(pm.iterationData.get(\"firstname\"));",
+                  "});"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Accept",
+                "value": "application/json"
+              },
+              {
+                "key": "Cookie",
+                "value": "token={{token}}"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": "{{baseUrl}}/booking/{{bookingId}}",
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstname\": \"{{firstname}}\",\n  \"lastname\": \"Updated\",\n  \"totalprice\": {{totalprice}},\n  \"depositpaid\": {{depositpaid}},\n  \"bookingdates\": {\n    \"checkin\": \"{{checkin}}\",\n    \"checkout\": \"{{checkout}}\"\n  },\n  \"additionalneeds\": \"Updated by PUT\"\n}"
             }
           }
         },
